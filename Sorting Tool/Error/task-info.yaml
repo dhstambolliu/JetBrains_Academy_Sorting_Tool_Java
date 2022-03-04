@@ -19,6 +19,652 @@ files:
         }
     }
   learner_created: false
+- name: src/sorting/DataType.java
+  visible: true
+  text: |-
+    package sorting;
+
+    public enum DataType {
+        LONG("long"),
+        LINE("line"),
+        WORD("word");
+
+        private String type;
+
+        DataType(String type) {
+            this.type = type;
+        }
+    }
+  learner_created: true
+- name: src/sorting/Lines.java
+  visible: true
+  text: |-
+    package sorting;
+
+    public class Lines extends Data{
+        Lines(Arguments arg) {
+            super(arg);
+        }
+
+        void generate() {
+            var input = readFromSource(false);
+
+            if (isSorted) {
+                mergeSort(input, 0, input.length);
+                printResultsSorted(input, "lines");
+            } else
+            {
+                printResultsByCount(mapValues(input), "lines");
+            }
+        }
+    }
+  learner_created: true
+- name: src/sorting/Longs.java
+  visible: true
+  text: |-
+    package sorting;
+
+    import java.util.ArrayList;
+
+    public class Longs extends Data {
+        Longs(Arguments arg) {
+            super(arg);
+        }
+
+        private void mergeSort(Long[] array, int leftIncl, int rightExcl) {
+            // the base case: if sub-array contains <= 1 items, stop dividing because it's sorted
+            if (rightExcl <= leftIncl + 1) {
+                return;
+            }
+
+            /* divide: calculate the index of the middle element */
+            int middle = leftIncl + (rightExcl - leftIncl) / 2;
+
+            mergeSort(array, leftIncl, middle);  // conquer: sort the left sub-array
+            mergeSort(array, middle, rightExcl); // conquer: sort the right sub-array
+
+            /* combine: merge both sorted sub-arrays into sorted one */
+            merge(array, leftIncl, middle, rightExcl);
+        }
+
+        private void merge(Long[] array, int left, int middle, int right) {
+            int indexLeft = left;   // index for the left sub-array
+            int indexRight = middle; // index for the right sub-array
+            int indexTemp = 0;      // index for the temp sub-array
+
+            Long[] temp = new Long[right - left]; // temporary array for merging
+
+        /* get the next lesser element from one of two sub-arrays
+           and then insert it in the array until one of the sub-arrays is empty */
+            while (indexLeft < middle && indexRight < right) {
+                if (array[indexLeft] <= array[indexRight]) {
+                    temp[indexTemp] = array[indexLeft];
+                    indexLeft++;
+                } else {
+                    temp[indexTemp] = array[indexRight];
+                    indexRight++;
+                }
+                indexTemp++;
+            }
+
+            /* insert all the remaining elements of the left sub-array in the array */
+            for (; indexLeft < middle; indexLeft++, indexTemp++) {
+                temp[indexTemp] = array[indexLeft];
+            }
+
+            /* insert all the remaining elements of the right sub-array in the array */
+            for (; indexRight < right; indexRight++, indexTemp++) {
+                temp[indexTemp] = array[indexRight];
+            }
+
+            /* effective copying elements from temp to array */
+            System.arraycopy(temp, 0, array, left, temp.length);
+        }
+
+        void generate() {
+            var input = readFromSource(true);
+
+            ArrayList<Long> temp = new ArrayList<>();
+            for (var entry : input) {
+                try {
+                    temp.add(Long.parseLong(entry));
+                } catch (NumberFormatException e) {
+                    System.out.printf("\"%s\" is not a long. It will be skipped.%n", entry);
+                }
+            }
+            var array = temp.toArray(new Long[0]);
+            size = array.length;
+
+            if (isSorted) {
+                mergeSort(array, 0, array.length);
+                printResultsSorted(array, "numbers");
+            } else {
+                var map = mapValues(array);
+                printResultsByCount(map, "numbers");
+            }
+        }
+    }
+  learner_created: true
+- name: src/sorting/Item.java
+  visible: true
+  text: |-
+    package sorting;
+
+    import java.util.Comparator;
+
+    public interface Item {
+        Comparator<Item> comparator();
+
+        boolean equals(Item item);
+    }
+  learner_created: true
+- name: src/sorting/StringItem.java
+  visible: true
+  text: |-
+    package sorting;
+
+
+    import java.util.Comparator;
+
+    public class StringItem implements Item {
+
+        private final String value;
+
+        public StringItem(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public Comparator<Item> comparator() {
+            return (item, otherItem) -> {
+                StringItem one = (StringItem) item;
+                StringItem other = (StringItem) otherItem;
+
+                if (one.value.length() > other.value.length()) {
+                    return 1;
+                }
+
+                if (one.value.length() < other.value.length()) {
+                    return -1;
+                }
+
+                return one.value.compareTo(other.value);
+            };
+        }
+
+        @Override
+        public boolean equals(Item item) {
+            return this.value.equals(((StringItem) item).value);
+        }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
+    }
+  learner_created: true
+- name: src/sorting/LongItem.java
+  visible: true
+  text: |-
+    package sorting;
+
+    import java.util.Comparator;
+
+    public class LongItem implements Item {
+
+        private final Long value;
+
+        public LongItem(Long value) {
+            this.value = value;
+        }
+
+        @Override
+        public Comparator<Item> comparator() {
+            return (item, otherItem) -> {
+                LongItem one = (LongItem) item;
+                LongItem other = (LongItem) otherItem;
+
+                return one.value.compareTo(other.value);
+            };
+        }
+
+        @Override
+        public boolean equals(Item item) {
+            return this.value.equals(((LongItem) item).value);
+        }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
+    }
+  learner_created: true
+- name: src/sorting/Arguments.java
+  visible: true
+  text: |-
+    package sorting;
+
+    import java.io.*;
+    import java.nio.file.Files;
+    import java.nio.file.Path;
+
+    public class Arguments {
+        private String dataType;    // set to the type of data we will process (default is "word")
+        private boolean sortMode;   // true if we sort the data, false if we map it (default is true)
+        private BufferedReader inputSource;
+        private BufferedWriter outputSource;
+
+        Arguments() {
+            dataType = "word";
+            sortMode = true;
+            inputSource = new BufferedReader(new InputStreamReader(System.in));
+            outputSource = new BufferedWriter(new OutputStreamWriter(System.out));
+        }
+
+        String getDataType() {
+            return dataType;
+        }
+
+        boolean isSortMode() {
+            return sortMode;
+        }
+
+        BufferedReader getInputSource() {
+            return inputSource;
+        }
+
+        BufferedWriter getOutputSource() {
+            return outputSource;
+        }
+
+        void parseArguments(String[] args) {
+            for (int index = 0; index < args.length; index++) {
+                // gets the next argument on the command line or an empty string if we're past the end
+                String nextArg = index + 1 < args.length ? args[index + 1] : "";
+                switch (args[index]) {
+                    case "-sortingType":
+                        if (setSortMode(nextArg)) {
+                            index++;
+                        }
+                        break;
+                    case "-dataType":
+                        if (setDataType(nextArg)) {
+                            index++;
+                        }
+                        break;
+                    case "-inputFile":
+                        if (setInputSource(nextArg)) {
+                            index++;
+                        }
+                        break;
+                    case "-outputFile":
+                        if (setOutputSource(nextArg)) {
+                            index++;
+                        }
+                        break;
+                    default:
+                        System.out.printf("\"%s\" is not a valid parameter. It will be skipped.%n",
+                                args[index]);
+                        break;
+                }
+            }
+        }
+
+        /**
+         * Process the argument for the "-sortingType" option from the command line.
+         *
+         * @param argument the next item following the "-sortingType" option
+         * @return false if the argument is another command line option
+         */
+        private boolean setSortMode(String argument) {
+            boolean result = true;
+
+            switch (argument) {
+                case "byCount":
+                    sortMode = false;   // we'll map the data and count occurrences
+                    break;
+                case "natural":
+                    sortMode = true;    // we'll sort the data into ascending/lexicographical order
+                    break;
+                default:
+                    System.out.println("No sorting type defined!");
+                    if (!argument.isEmpty() && argument.startsWith("-")) {
+                        result = false;
+                    }
+                    break;
+            }
+
+            return result;
+        }
+
+        /**
+         * Process the argument for the "-dataType" option from the command line.
+         *
+         * @param argument the next item following the "-sortingType" option
+         * @return false if the argument is another command line option
+         */
+        private boolean setDataType(String argument) {
+            boolean result = true;
+
+            switch (argument) {
+                case "long":
+                case "line":
+                case "word":
+                    dataType = argument;
+                    break;
+                default:
+                    System.out.println("No data type defined!");
+                    if (!argument.isEmpty() && argument.startsWith("-")) {
+                        result = false;
+                    }
+                    break;
+            }
+
+            return result;
+        }
+
+        /**
+         * Process the argument for the "-inputFile" option from the command line.
+         *
+         * @param argument the next item following the "-sortingType" option
+         * @return false if the argument is another command line option
+         */
+        private boolean setInputSource(String argument) {
+            boolean result = true;
+
+            if (!argument.isEmpty() && argument.startsWith("-")) {
+                result = false;
+            } else {
+                try {
+                    inputSource = Files.newBufferedReader(Path.of(argument));
+                } catch (IOException e) {
+                    System.out.println("I/O error: " + e);
+                }
+            }
+
+            return result;
+        }
+
+        /**
+         * Process the argument for the "-outputFile" option from the command line.
+         *
+         * @param argument the next item following the "-sortingType" option
+         * @return false if the argument is another command line option
+         */
+        private boolean setOutputSource(String argument) {
+            boolean result = true;
+
+            if (!argument.isEmpty() && argument.startsWith("-")) {
+                result = false;
+            } else {
+                try {
+                    outputSource = Files.newBufferedWriter(Path.of(argument));
+                } catch (IOException e) {
+                    System.out.println("I/O error: " + e);
+                }
+            }
+
+            return result;
+        }
+    }
+  learner_created: true
+- name: src/sorting/Words.java
+  visible: true
+  text: |-
+    package sorting;
+
+    public class Words extends Data{
+        Words(Arguments arg) {
+            super(arg);
+        }
+
+        void generate() {
+            var input = readFromSource(true);
+
+            if (isSorted) {
+                mergeSort(input, 0, input.length);
+                printResultsSorted(input, "words");
+            } else {
+                printResultsByCount(mapValues(input), "words");
+            }
+        }
+    }
+  learner_created: true
+- name: src/sorting/SortingTool.java
+  visible: true
+  text: |-
+    package sorting;
+
+    import java.util.ArrayList;
+    import java.util.List;
+    import java.util.stream.Collectors;
+
+    public class SortingTool {
+        public final DataType dataType;
+        private ArrayList<Item> items = new ArrayList<>();
+
+        public SortingTool(DataType type) {
+            dataType = type;
+        }
+
+        public void addItem(Item item)  {
+            items.add(item);
+        }
+
+        public int total() {
+            return items.size();
+        }
+
+        public Item greatest() {
+            return items.stream()
+                    // @TODO maybe find a more elegant way
+                    .max(items.get(0).comparator())
+                    .orElse(null);
+        }
+
+        public int frequency(Item item) {
+            int frequency = 0;
+
+            for (Item anItem : items) {
+                if (anItem.equals(item)) {
+                    frequency++;
+                }
+            }
+
+            return frequency;
+        }
+
+        public List<Item> sort() {
+            return items.stream()
+                    // @TODO maybe find a more elegant way
+                    .sorted(items.get(0).comparator())
+                    .collect(Collectors.toList());
+        }
+    }
+  learner_created: true
+- name: src/sorting/Data.java
+  visible: true
+  text: |-
+    package sorting;
+
+    import java.io.BufferedReader;
+    import java.io.BufferedWriter;
+    import java.io.IOException;
+    import java.util.*;
+    import java.util.stream.Collectors;
+
+    class Data {
+        int size;
+        String dataType;
+        boolean isSorted;
+        BufferedReader inputSource;
+        BufferedWriter outputSource;
+
+        public Data(Arguments arg) {
+            this.dataType = arg.getDataType();
+            this.isSorted = arg.isSortMode();
+            this.inputSource = arg.getInputSource();
+            this.outputSource = arg.getOutputSource();
+        }
+
+        static int percentage(int occurrences, int total) {
+            return (int) (occurrences / (double) total * 100);
+        }
+
+        String[] readFromSource(boolean isSplit) {
+            List<String> array = new ArrayList<>();
+            String[] input = inputSource.lines().toArray(String[]::new);
+
+            if (isSplit) {
+                for (var line : input) {
+                    Collections.addAll(array, line.split("\\s+"));
+                }
+            }
+
+            size = isSplit ? array.size() : input.length;
+
+            return isSplit ? array.toArray(new String[0]) : input;
+        }
+
+        <T> Map<T, Integer> mapValues(T[] input) {
+            Map<T, Integer> hashMap = new TreeMap<>();
+            for (var entry : input) {
+                hashMap.put(entry, hashMap.getOrDefault(entry, 0) + 1);
+            }
+            return hashMap;
+        }
+
+        /**
+         * Override in sub-classes
+         */
+        void generate() {
+
+        }
+
+        <T> void printResultsByCount(Map<T, Integer> map, String output) {
+            Map<T, Integer> linkedHashMap = map.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                            (e1, e2) -> e1, LinkedHashMap::new));
+
+            try {
+                outputSource.write(String.format("Total %s: %d%n", output, size));
+                for (var key : linkedHashMap.keySet()) {
+                    outputSource.write(String.format("%s: %d time(s), %3d%%%n",
+                            key, map.get(key), percentage(map.get(key), size)));
+                }
+                outputSource.flush();
+            } catch (IOException e) {
+                System.out.println("I/O Error: " + e);
+            }
+        }
+
+        <T> void printResultsSorted(T[] array, String output) {
+            String separator = dataType.equals("line") ? "\n" : " ";
+            try {
+                outputSource.write(String.format("Total %s: %d%n", output, size));
+                outputSource.write(String.format("Sorted data:%s", separator));
+                for (var entry : array) {
+                    outputSource.write(String.format("%s%s", entry, separator));
+                }
+                outputSource.flush();
+            } catch (IOException e) {
+                System.out.println("I/O error: " + e);
+            }
+        }
+
+        void mergeSort(String[] array, int leftIncl, int rightExcl) {
+            // the base case: if sub-array contains <= 1 items, stop dividing because it's sorted
+            if (rightExcl <= leftIncl + 1) {
+                return;
+            }
+
+            /* divide: calculate the index of the middle element */
+            int middle = leftIncl + (rightExcl - leftIncl) / 2;
+
+            mergeSort(array, leftIncl, middle);  // conquer: sort the left sub-array
+            mergeSort(array, middle, rightExcl); // conquer: sort the right sub-array
+
+            /* combine: merge both sorted sub-arrays into sorted one */
+            merge(array, leftIncl, middle, rightExcl);
+        }
+
+        private void merge(String[] array, int left, int middle, int right) {
+            int indexLeft = left;   // index for the left sub-array
+            int indexRight = middle; // index for the right sub-array
+            int indexTemp = 0;      // index for the temp sub-array
+
+            String[] temp = new String[right - left]; // temporary array for merging
+
+        /* get the next lesser element from one of two sub-arrays
+           and then insert it in the array until one of the sub-arrays is empty */
+            while (indexLeft < middle && indexRight < right) {
+                if (array[indexLeft].compareTo(array[indexRight]) <= 0) {
+                    temp[indexTemp] = array[indexLeft];
+                    indexLeft++;
+                } else {
+                    temp[indexTemp] = array[indexRight];
+                    indexRight++;
+                }
+                indexTemp++;
+            }
+
+            /* insert all the remaining elements of the left sub-array in the array */
+            for (; indexLeft < middle; indexLeft++, indexTemp++) {
+                temp[indexTemp] = array[indexLeft];
+            }
+
+            /* insert all the remaining elements of the right sub-array in the array */
+            for (; indexRight < right; indexRight++, indexTemp++) {
+                temp[indexTemp] = array[indexRight];
+            }
+
+            /* effective copying elements from temp to array */
+            System.arraycopy(temp, 0, array, left, temp.length);
+        }
+
+    }
+  learner_created: true
+- name: src/sorting/Settings.java
+  visible: true
+  text: |-
+    package sorting;
+
+    import java.util.Arrays;
+
+    public class Settings {
+
+        private final String[] args;
+        public final DataType dataType;
+        public final boolean isSorted;
+
+        public Settings(String[] args) {
+            this.args = args;
+            this.isSorted = findIsSorted();
+            this.dataType = findType();
+        }
+
+        private DataType findType() {
+            if (findIsSorted()) {
+                return DataType.LONG;
+            }
+
+            int dataTypeIndex = Arrays.asList(args).indexOf("-dataType");
+
+            if (dataTypeIndex == -1) {
+                return DataType.WORD;
+            }
+
+            return DataType.valueOf(args[dataTypeIndex + 1].toUpperCase());
+        }
+
+        private boolean findIsSorted() {
+            int isSortedIndex = Arrays.asList(args).indexOf("-sortIntegers");
+
+            return isSortedIndex > -1;
+        }
+    }
+  learner_created: true
 - name: test/common/SortingToolStage5Test.kt
   visible: false
   text: |+
@@ -425,5 +1071,8 @@ files:
 
   learner_created: false
 feedback_link: https://hyperskill.org/learn/step/5385#comment
-status: Unchecked
-record: -1
+status: Solved
+feedback:
+  message: Congratulations!
+  time: Fri, 04 Mar 2022 19:26:17 UTC
+record: 5
